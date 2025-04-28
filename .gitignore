@@ -1,0 +1,27 @@
+# Ignorar pastas de build e distribuição
+build/
+dist/
+*.spec
+
+# Ignorar cache do Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar arquivos de ambiente
+.env
+.venv
+
+# Ignorar arquivos de IDE
+.vscode/
+.idea/
+
+# Ignorar base de dados, se for sensível
+data/base_std.xlsx
+
+# Ignorar executáveis
+*.exe
+
+# Ignorar notas
+note.txt
