@@ -18,7 +18,7 @@ A aplicação também oferece visualização prévia dos arquivos de entrada e s
 
 Clone o repositório:
 
-git clone https://github.com/MouseDataScientist/print_post_processes.git
+git clone https://github.com/MouseDataScientist/ETLFilePro.git
 
 Instale as dependências:
 
