@@ -6,18 +6,19 @@ class Registry:
          
         base_std = base_std.reindex(base_client.index) # Deixa a base_std com o mesmo tamanho da base_client
 
+        for col in base_client.select_dtypes(include=["float64"]).columns:
+            base_client[col] = base_client[col].astype("string")
+
         base_id = base_client.filter(
             regex=(
             r'(?i)^(ID|C[ÓO]DIGO|CÃ³digo)$'
             ), 
             axis=1
         )
-        id = base_id.columns[0] if not base_id.empty and not base_client[base_id.columns[0]].isna().any() else None
+        id = base_id.columns[0]
         if id:
             base_std['ID'] = base_client[id].values
-        else:
-            raise ValueError('Nenhuma coluna ID ou CÓDIGO encontrada em base_client')
-
+        
         # Filtrar na base do cliente o NOME do CLIENTE ou DEVEDOR independente da posição da string e maiúsculas ou minúsculas
         base_name = base_client.filter(
             regex=(
@@ -95,12 +96,17 @@ class Registry:
             cnpj = base_cnpj.columns[0]
             base_std['CNPJ_REMETENTE'] = base_client[cnpj].values
 
-        base_std.dropna(how='all', inplace=True) # Drop de linhas vazias 
+        # Remove caracteres não numéricos
+        base_std['CPF_CNPJ_DESTINATARIO'] = base_std['CPF_CNPJ_DESTINATARIO'].str.replace(r'\D', '', regex=True)
 
-        # Replica a primeira linha da coluna apresentante para as demais abaixo dela
+        # Converte nulos para string vazia
+        base_std['CPF_CNPJ_DESTINATARIO'] = base_std['CPF_CNPJ_DESTINATARIO'].fillna("")
+
+        # Remove linhas onde CPF está vazio
+        base_std = base_std[base_std['CPF_CNPJ_DESTINATARIO'] != ""]
+
+        # Preenche 'APRESENTANTE' com o valor da primeira linha
         base_std['APRESENTANTE'] = base_std['APRESENTANTE'].ffill()
-
-        base_std.fillna("", inplace=True) # Limpa os valores NAN
 
         registers = base_std.shape[0] # Pega o número de registros (linhas) do arquivo
 

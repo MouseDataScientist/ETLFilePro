@@ -6,6 +6,9 @@ class Registry:
          
         base_std = base_std.reindex(base_client.index) # Deixa a base_std com o mesmo tamanho da base_client
 
+        for col in base_client.select_dtypes(include=["float64"]).columns:
+            base_client[col] = base_client[col].astype("string")
+
         # Filtrar na base do cliente o NOME do CLIENTE ou DEVEDOR independente da posição da string e maiúsculas ou minúsculas
         base_name = base_client.filter(
             regex=(
@@ -70,26 +73,29 @@ class Registry:
 
         # Filtrar na base do cliente o CNPJ do ESCRITÓRIO, ASSESSORIA ou CREDOR, independente da posição da string
         base_cnpj = base_client.filter(
-        regex=(
-            r'(?i)'  # Ignorar maiúsculas/minúsculas
-            r'^(?:CNPJ[\s_.\\/-]*(?:ASSESSORIA(S)?|ESCRIT[ÓO]RIO)$)|'  # "CNPJ" seguido de "ASSESSORIA" ou "ESCRITÓRIO"
-            r'(?:ASSESSORIA(S)?|ESCRIT[ÓO]RIO)[\s_.\\/-]*CNPJ$'  # "ASSESSORIA" ou "ESCRITÓRIO" seguido de "CNPJ"
-        ),
-        axis=1
-    )
+            regex=(
+                r'(?i)'  # Ignorar maiúsculas/minúsculas
+                r'(?:^CNPJ$|'  # Apenas "CNPJ"
+                r'^CNPJ[\s_.\\/-]*(?:ASSESSORIA(S)?|ESCRIT[ÓO]RIO)$|'  # "CNPJ" seguido de "ASSESSORIA(S)" ou "ESCRITÓRIO"
+                r'^(?:ASSESSORIA(S)?|ESCRIT[ÓO]RIO)[\s_.\\/-]*CNPJ$)'  # "ASSESSORIA(S)" ou "ESCRITÓRIO" seguido de "CNPJ"
+            ),
+            axis=1
+        )
         if not base_cnpj.empty:
             cnpj = base_cnpj.columns[0]
             base_std['CNPJ_REMETENTE'] = base_client[cnpj].values
 
-        base_std.dropna(how='all', inplace=True) # Drop de linhas vazias 
+       # Remove caracteres não numéricos
+        base_std['CPF_CNPJ_DESTINATARIO'] = base_std['CPF_CNPJ_DESTINATARIO'].str.replace(r'\D', '', regex=True)
 
-        # Replica a primeira linha da coluna apresentante para as demais abaixo dela
+        # Converte nulos para string vazia
+        base_std['CPF_CNPJ_DESTINATARIO'] = base_std['CPF_CNPJ_DESTINATARIO'].fillna("")
+
+        # Remove linhas onde CPF está vazio
+        base_std = base_std[base_std['CPF_CNPJ_DESTINATARIO'] != ""]
+
+        # Preenche 'APRESENTANTE' com o valor da primeira linha
         base_std['APRESENTANTE'] = base_std['APRESENTANTE'].ffill()
-
-        for col in base_std.select_dtypes(include=["float64"]).columns:
-            base_std[col] = base_std[col].astype("string")
-
-        base_std.fillna("", inplace=True)
 
         registers = base_std.shape[0] # Pega o número de registros (linhas) do arquivo
 
